@@ -1,0 +1,4 @@
+github.com/hugocarreira/go-decent-copy v0.0.0-20181018112419-9f482c9a2943 h1:uuMUrGtG7EelzCDzq7VNfexyMnbWJzHK+lA2yEHfTk8=
+github.com/hugocarreira/go-decent-copy v0.0.0-20181018112419-9f482c9a2943/go.mod h1:LGbo2Li3Ub3ZNYZHIUFZ4qfwsFNvOI+If5lpEQNYJIU=
+github.com/otiai10/copy v0.0.0-20180813032824-7e9a647135a1 h1:A7kMXwDPBTfIVRv2l6XV3U6Su3SzLUzZjxnDDQVZDIY=
+github.com/otiai10/copy v0.0.0-20180813032824-7e9a647135a1/go.mod h1:pXzZSDlN+HPzSdyIBnKNN9ptD9Hx7iZMWIJPTwo4FPE=
