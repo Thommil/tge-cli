@@ -4,7 +4,6 @@ import (
 	"flag"
 	"fmt"
 	"os"
-	"os/exec"
 	"path"
 	"strings"
 
@@ -36,34 +35,6 @@ func (builder *Builder) createInitBuilder(packageArg string) error {
 		return err
 	}
 
-	return nil
-}
-
-func (builder *Builder) createWorkspace() error {
-	log("NOTICE", fmt.Sprintf("Initializing '%s' module", builder.packageName))
-	cmd := exec.Command("go", "mod", "init", builder.packageName)
-	cmd.Env = append(os.Environ(),
-		"GO111MODULE=on",
-		fmt.Sprintf("GOPATH=%s", builder.goPath),
-	)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("failed to initialze workspace")
-	}
-
-	log("NOTICE", fmt.Sprintf("Linking '%s' module dependencies", builder.packageName))
-	cmd = exec.Command("go", "get", tgePackageName)
-	cmd.Env = append(os.Environ(),
-		"GO111MODULE=on",
-		fmt.Sprintf("GOPATH=%s", builder.goPath),
-	)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("failed to link module dependencies")
-	}
-
 	log("NOTICE", "Initializing project files")
 	if err := copy.Copy(path.Join(builder.tgeRootPath, tgeTemplatePath), builder.packagePath); err != nil {
 		log("ERROR", err.Error())
@@ -88,12 +59,6 @@ func doInit(builder Builder) {
 	}
 
 	if err := builder.createInitBuilder(flag.Args()[0]); err != nil {
-		log("ERROR", err.Error())
-		builder.cleanInitBuilder()
-		os.Exit(1)
-	}
-
-	if err := builder.createWorkspace(); err != nil {
 		log("ERROR", err.Error())
 		builder.cleanInitBuilder()
 		os.Exit(1)

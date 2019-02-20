@@ -21,6 +21,8 @@ func main() {
 		doInit(createBuilder())
 	case "build":
 		doBuild(createBuilder())
+	case "version":
+		fmt.Printf("TGE v%s\n", tgeVersion)
 	default:
 		fmt.Println(usage)
 	}
@@ -37,5 +39,6 @@ Usage:
 Available commands:
 	init 	Create a new TGE project
 	build	Build & package TGE applications
+	version Print TGE version
 
 Use 'tge-cli command -h ' for get help on commands.`
