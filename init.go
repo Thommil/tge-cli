@@ -99,7 +99,7 @@ func doInit(builder Builder) {
 		os.Exit(1)
 	}
 
-	log("SUCCESS", "You can know build & deploy application using 'tge-cli bind' command (see help)")
+	log("SUCCESS", "You can know build & deploy application using 'tge-cli build' command (see help)")
 }
 
 var initUsage = `tge-cli init creates a TGE workspace.

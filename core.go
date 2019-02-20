@@ -48,7 +48,7 @@ func createBuilder() Builder {
 
 // Builder common
 func (builder *Builder) installTGE() error {
-	if builder.goPath != "" {
+	if builder.goPath == "" {
 		builder.goPath = os.Getenv("GOPATH")
 		if builder.goPath == "" && build.Default.GOPATH != "" {
 			builder.goPath = build.Default.GOPATH
