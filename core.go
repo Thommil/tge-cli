@@ -75,7 +75,7 @@ func (builder *Builder) installTGE() error {
 			}
 
 			log("NOTICE", fmt.Sprintf("Linking '%s' module dependencies", builder.packageName))
-			cmd = exec.Command("go", "get", tgePackageName)
+			cmd = exec.Command("go", "fix")
 			cmd.Env = append(os.Environ(),
 				"GO111MODULE=on",
 				fmt.Sprintf("GOPATH=%s", builder.goPath),
