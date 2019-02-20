@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"go/build"
 	"os"
 	"os/exec"
 	"path"
@@ -48,12 +47,7 @@ func createBuilder() Builder {
 
 // Builder common
 func (builder *Builder) installTGE() error {
-	if builder.goPath == "" {
-		builder.goPath = os.Getenv("GOPATH")
-		if builder.goPath == "" && build.Default.GOPATH != "" {
-			builder.goPath = build.Default.GOPATH
-		}
-	}
+	builder.goPath = path.Join(builder.packagePath, tgeLocalGoPath)
 
 	if err := filepath.Walk(builder.goPath, func(p string, info os.FileInfo, err error) error {
 		if !info.IsDir() && info.Name() == fmt.Sprintf("tge-%s.marker", tgeVersion) {
@@ -65,14 +59,6 @@ func (builder *Builder) installTGE() error {
 	}
 
 	if builder.tgeRootPath == "" {
-		if os.Getenv("GOPATH") == "" {
-			builder.goPath = os.Getenv("GOPATH")
-		} else {
-			builder.goPath = path.Join(builder.packagePath, tgeLocalGoPath)
-		}
-		if builder.goPath == "" {
-			builder.goPath = path.Join(builder.packagePath, tgeLocalGoPath)
-		}
 		log("NOTICE", fmt.Sprintf("Installing TGE in %s", builder.packagePath))
 		log("NOTICE", fmt.Sprintf("Using GOPATH %s (set it for DEV)", builder.goPath))
 		cmd := exec.Command("go", "get", tgePackageName)
@@ -107,7 +93,6 @@ func (builder *Builder) installTGE() error {
 		}); err != nil {
 			return fmt.Errorf("failed to set read permission on %s: %s", builder.tgeRootPath, err)
 		}
-
 	}
 
 	return nil

@@ -22,7 +22,7 @@ func main() {
 	case "build":
 		doBuild(createBuilder())
 	default:
-		fmt.Printf("ERROR:\n   > Unknown '%s' command\n", os.Args[1])
+		fmt.Println(usage)
 	}
 }
 
