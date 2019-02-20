@@ -105,7 +105,7 @@ func (builder *Builder) installGoMobile() (string, error) {
 		}
 
 		log("NOTICE", "initializing gomobile")
-		cmd := exec.Command("gomobile", "init", "-ndk", androidNDKPath)
+		cmd := exec.Command(gomobilebin, "init", "-ndk", androidNDKPath)
 		cmd.Env = append(os.Environ(),
 			fmt.Sprintf("GOPATH=%s", builder.goPath),
 		)
