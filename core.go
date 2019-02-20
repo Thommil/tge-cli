@@ -13,6 +13,9 @@ const tgeVersion = "1.0.0"
 const tgeLocalGoPath = ".tge"
 
 const tgePackageName = "github.com/thommil/tge"
+const tgeTemplatePath = "template"
+
+const distPath = "dist"
 
 type Builder struct {
 	//all
@@ -21,6 +24,7 @@ type Builder struct {
 	packagePath string
 	goPath      string
 	tgeRootPath string
+	verbose     bool
 
 	//init
 
@@ -44,20 +48,20 @@ func createBuilder() Builder {
 
 // Builder common
 func (builder *Builder) installTGE() error {
-	builder.goPath = os.Getenv("GOPATH")
-	if builder.goPath == "" {
-		builder.goPath = build.Default.GOPATH
+	if builder.goPath != "" {
+		builder.goPath = os.Getenv("GOPATH")
+		if builder.goPath == "" && build.Default.GOPATH != "" {
+			builder.goPath = build.Default.GOPATH
+		}
 	}
 
-	if builder.goPath != "" {
-		if err := filepath.Walk(builder.goPath, func(p string, info os.FileInfo, err error) error {
-			if !info.IsDir() && info.Name() == fmt.Sprintf("tge-%s.marker", tgeVersion) {
-				builder.tgeRootPath = path.Dir(p)
-			}
-			return nil
-		}); err != nil {
-			return fmt.Errorf("failed to analyze GOPATH %s: %s", builder.goPath, err)
+	if err := filepath.Walk(builder.goPath, func(p string, info os.FileInfo, err error) error {
+		if !info.IsDir() && info.Name() == fmt.Sprintf("tge-%s.marker", tgeVersion) {
+			builder.tgeRootPath = path.Dir(p)
 		}
+		return nil
+	}); err != nil {
+		return fmt.Errorf("failed to analyze GOPATH %s: %s", builder.goPath, err)
 	}
 
 	if builder.tgeRootPath == "" {

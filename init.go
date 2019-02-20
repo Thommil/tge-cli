@@ -65,9 +65,9 @@ func (builder *Builder) createWorkspace() error {
 	}
 
 	log("NOTICE", "Initializing project files")
-	if err := copy.Copy(path.Join(builder.tgeRootPath, "template"), builder.packagePath); err != nil {
+	if err := copy.Copy(path.Join(builder.tgeRootPath, tgeTemplatePath), builder.packagePath); err != nil {
 		log("ERROR", err.Error())
-		return fmt.Errorf("Failed to copy project files, try manually from '%s", path.Join(builder.tgeRootPath, "template"))
+		return fmt.Errorf("Failed to copy project files, try manually from '%s", path.Join(builder.tgeRootPath, tgeTemplatePath))
 	}
 
 	return nil
