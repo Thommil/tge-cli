@@ -49,13 +49,15 @@ func createBuilder() Builder {
 func (builder *Builder) installTGE() error {
 	builder.goPath = path.Join(builder.packagePath, tgeLocalGoPath)
 
-	if err := filepath.Walk(builder.goPath, func(p string, info os.FileInfo, err error) error {
-		if !info.IsDir() && info.Name() == fmt.Sprintf("tge-%s.marker", tgeVersion) {
-			builder.tgeRootPath = path.Dir(p)
+	if _, err := os.Stat(builder.goPath); err == nil {
+		if err := filepath.Walk(builder.goPath, func(p string, info os.FileInfo, err error) error {
+			if !info.IsDir() && info.Name() == fmt.Sprintf("tge-%s.marker", tgeVersion) {
+				builder.tgeRootPath = path.Dir(p)
+			}
+			return nil
+		}); err != nil {
+			return fmt.Errorf("failed to analyze GOPATH %s: %s", builder.goPath, err)
 		}
-		return nil
-	}); err != nil {
-		return fmt.Errorf("failed to analyze GOPATH %s: %s", builder.goPath, err)
 	}
 
 	if builder.tgeRootPath == "" {
