@@ -24,6 +24,7 @@ func (builder *Builder) initBuilder(packagePath string) error {
 	}
 
 	builder.programName = path.Base(builder.packagePath)
+	builder.packageName = builder.programName
 
 	if err := os.Chdir(builder.packagePath); err != nil {
 		return err
