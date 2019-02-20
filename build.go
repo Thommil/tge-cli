@@ -12,7 +12,7 @@ import (
 	"github.com/otiai10/copy"
 )
 
-func (builder *Builder) createBuilderBuilder(packagePath string) error {
+func (builder *Builder) initBuilder(packagePath string) error {
 	if !path.IsAbs(packagePath) {
 		builder.packagePath = path.Join(builder.cwd, packagePath)
 	} else {
@@ -121,7 +121,7 @@ func (builder *Builder) installGoMobile() (string, error) {
 func (builder *Builder) buildAndroid(packagePath string) error {
 	builder.target = "android"
 
-	if err := builder.createBuilderBuilder(packagePath); err != nil {
+	if err := builder.initBuilder(packagePath); err != nil {
 		return err
 	}
 
@@ -187,7 +187,7 @@ func (builder *Builder) buildAndroid(packagePath string) error {
 func (builder *Builder) buildIOS(packagePath string, bundleID string) error {
 	builder.target = "ios"
 
-	if err := builder.createBuilderBuilder(packagePath); err != nil {
+	if err := builder.initBuilder(packagePath); err != nil {
 		return err
 	}
 
@@ -221,7 +221,7 @@ func (builder *Builder) buildIOS(packagePath string, bundleID string) error {
 func (builder *Builder) buildBrowser(packagePath string) error {
 	builder.target = "browser"
 
-	if err := builder.createBuilderBuilder(packagePath); err != nil {
+	if err := builder.initBuilder(packagePath); err != nil {
 		return err
 	}
 
@@ -262,7 +262,7 @@ func (builder *Builder) buildDesktop(packagePath string) error {
 		return fmt.Errorf("unsupported desktop target: '%s'", runtime.GOOS)
 	}
 
-	if err := builder.createBuilderBuilder(packagePath); err != nil {
+	if err := builder.initBuilder(packagePath); err != nil {
 		return err
 	}
 

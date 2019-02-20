@@ -10,7 +10,7 @@ import (
 	"github.com/otiai10/copy"
 )
 
-func (builder *Builder) createInitBuilder(packageArg string) error {
+func (builder *Builder) initWorkspace(packageArg string) error {
 	builder.packageName = packageArg
 	if index := strings.LastIndex(builder.packageName, "/"); index >= 0 {
 		builder.packagePath = path.Join(builder.cwd, builder.packageName[index:])
@@ -58,7 +58,7 @@ func doInit(builder Builder) {
 		return
 	}
 
-	if err := builder.createInitBuilder(flag.Args()[0]); err != nil {
+	if err := builder.initWorkspace(flag.Args()[0]); err != nil {
 		log("ERROR", err.Error())
 		builder.cleanInitBuilder()
 		os.Exit(1)
@@ -72,4 +72,8 @@ var initUsage = `tge-cli init creates a TGE workspace.
 Usage:
 	tge-cli init package
 
-Package argument should be in URL format to allow usage of go get.`
+Package argument can be of several forms:
+	local 	ex: my-app
+	url		ex: github.com/me/my-app
+	
+In both cases, the last token will be used as worspace root.`

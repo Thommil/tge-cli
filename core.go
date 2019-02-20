@@ -73,18 +73,6 @@ func (builder *Builder) installTGE() error {
 			if err := cmd.Run(); err != nil {
 				return fmt.Errorf("failed to initialze workspace")
 			}
-
-			log("NOTICE", fmt.Sprintf("Linking '%s' module dependencies", builder.packageName))
-			cmd = exec.Command("go", "fix")
-			cmd.Env = append(os.Environ(),
-				"GO111MODULE=on",
-				fmt.Sprintf("GOPATH=%s", builder.goPath),
-			)
-			cmd.Stdout = os.Stdout
-			cmd.Stderr = os.Stderr
-			if err := cmd.Run(); err != nil {
-				return fmt.Errorf("failed to link module dependencies")
-			}
 		}
 
 		log("NOTICE", fmt.Sprintf("Installing TGE in %s", builder.packagePath))
