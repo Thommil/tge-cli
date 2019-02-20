@@ -8,11 +8,12 @@ import (
 	"path/filepath"
 )
 
-const tgeVersion = "1.0.0"
+const tgeVersion = "master"
 const tgeLocalGoPath = ".tge"
-
-const tgePackageName = "github.com/thommil/tge"
 const tgeTemplatePath = "template"
+
+var tgePackageName = fmt.Sprintf("github.com/thommil/tge@%s", tgeVersion)
+var tgeMarker = fmt.Sprintf("tge-%s.marker", tgeVersion)
 
 const distPath = "dist"
 
@@ -51,7 +52,7 @@ func (builder *Builder) installTGE() error {
 
 	if _, err := os.Stat(builder.goPath); err == nil {
 		if err := filepath.Walk(builder.goPath, func(p string, info os.FileInfo, err error) error {
-			if !info.IsDir() && info.Name() == fmt.Sprintf("tge-%s.marker", tgeVersion) {
+			if !info.IsDir() && info.Name() == tgeMarker {
 				builder.tgeRootPath = path.Dir(p)
 			}
 			return nil
@@ -89,7 +90,7 @@ func (builder *Builder) installTGE() error {
 		}
 
 		if err := filepath.Walk(builder.goPath, func(p string, info os.FileInfo, err error) error {
-			if !info.IsDir() && info.Name() == fmt.Sprintf("tge-%s.marker", tgeVersion) {
+			if !info.IsDir() && info.Name() == tgeMarker {
 				builder.tgeRootPath = path.Dir(p)
 			}
 			return nil
