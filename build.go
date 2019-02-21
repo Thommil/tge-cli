@@ -30,14 +30,6 @@ func (builder *Builder) initBuilder(packagePath string) error {
 		return err
 	}
 
-	builder.goPath = os.Getenv("GOPATH")
-	if builder.goPath == "" {
-		builder.goPath = path.Join(builder.packagePath, tgeLocalGoPath)
-		if _, err := os.Stat(builder.goPath); os.IsNotExist(err) {
-			builder.goPath = ""
-		}
-	}
-
 	if err := builder.installTGE(); err != nil {
 		return err
 	}

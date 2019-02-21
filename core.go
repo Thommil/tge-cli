@@ -6,14 +6,14 @@ import (
 	"os/exec"
 	"path"
 	"path/filepath"
+	"strings"
 )
 
 const tgeVersion = "master"
 const tgeLocalGoPath = ".tge"
 const tgeTemplatePath = "template"
 
-var tgePackageName = fmt.Sprintf("github.com/thommil/tge@%s", tgeVersion)
-var tgeMarker = fmt.Sprintf("tge-%s.marker", tgeVersion)
+var tgePackageName = "github.com/thommil/tge"
 
 const distPath = "dist"
 
@@ -48,17 +48,20 @@ func createBuilder() Builder {
 
 // Builder common
 func (builder *Builder) installTGE() error {
-	builder.goPath = path.Join(builder.packagePath, tgeLocalGoPath)
+	//go list -f '{{.Dir}}' github.com/thommil/tge
+	builder.goPath = os.Getenv("GOPATH")
+	if builder.goPath == "" {
+		builder.goPath = path.Join(builder.packagePath, tgeLocalGoPath)
+	}
 
-	if _, err := os.Stat(builder.goPath); err == nil {
-		if err := filepath.Walk(builder.goPath, func(p string, info os.FileInfo, err error) error {
-			if !info.IsDir() && info.Name() == tgeMarker {
-				builder.tgeRootPath = path.Dir(p)
-			}
-			return nil
-		}); err != nil {
-			return fmt.Errorf("failed to analyze GOPATH %s: %s", builder.goPath, err)
-		}
+	cmd := exec.Command("go", "list", "-e", "-f", "{{.Dir}}", tgePackageName)
+	cmd.Env = append(os.Environ(),
+		fmt.Sprintf("GOPATH=%s", builder.goPath),
+	)
+	if output, err := cmd.Output(); err != nil {
+		return fmt.Errorf("failed to analyze GOPATH %s: %s", builder.goPath, err)
+	} else {
+		builder.tgeRootPath = strings.TrimSpace(string(output))
 	}
 
 	if builder.tgeRootPath == "" {
@@ -66,7 +69,6 @@ func (builder *Builder) installTGE() error {
 			log("NOTICE", fmt.Sprintf("Initializing '%s' module", builder.packageName))
 			cmd := exec.Command("go", "mod", "init", builder.packageName)
 			cmd.Env = append(os.Environ(),
-				"GO111MODULE=on",
 				fmt.Sprintf("GOPATH=%s", builder.goPath),
 			)
 			cmd.Stdout = os.Stdout
@@ -80,7 +82,6 @@ func (builder *Builder) installTGE() error {
 		log("NOTICE", fmt.Sprintf("Using GOPATH %s (set it for DEV)", builder.goPath))
 		cmd := exec.Command("go", "get", tgePackageName)
 		cmd.Env = append(os.Environ(),
-			"GO111MODULE=on",
 			fmt.Sprintf("GOPATH=%s", builder.goPath),
 		)
 		cmd.Stdout = os.Stdout
@@ -89,27 +90,28 @@ func (builder *Builder) installTGE() error {
 			return fmt.Errorf("failed to install TGE")
 		}
 
-		if err := filepath.Walk(builder.goPath, func(p string, info os.FileInfo, err error) error {
-			if !info.IsDir() && info.Name() == tgeMarker {
-				builder.tgeRootPath = path.Dir(p)
-			}
-			return nil
-		}); err != nil {
+		cmd = exec.Command("go", "list", "-e", "-f", "{{.Dir}}", tgePackageName)
+		cmd.Env = append(os.Environ(),
+			fmt.Sprintf("GOPATH=%s", builder.goPath),
+		)
+		if output, err := cmd.Output(); err != nil {
 			return fmt.Errorf("failed to analyze GOPATH %s: %s", builder.goPath, err)
+		} else {
+			builder.tgeRootPath = strings.TrimSpace(string(output))
 		}
 
 		if builder.tgeRootPath == "" {
 			return fmt.Errorf("failed to install TGE, try manually using 'go get %s'", tgePackageName)
 		}
+	}
 
-		if err := filepath.Walk(builder.tgeRootPath, func(p string, info os.FileInfo, err error) error {
-			if err = os.Chmod(p, info.Mode()|os.FileMode(0200)); err != nil {
-				return err
-			}
-			return nil
-		}); err != nil {
-			return fmt.Errorf("failed to set read permission on %s: %s", builder.tgeRootPath, err)
+	if err := filepath.Walk(builder.tgeRootPath, func(p string, info os.FileInfo, err error) error {
+		if err = os.Chmod(p, info.Mode()|os.FileMode(0222)); err != nil {
+			return err
 		}
+		return nil
+	}); err != nil {
+		return fmt.Errorf("failed to set read permission on %s: %s", builder.tgeRootPath, err)
 	}
 
 	return nil
