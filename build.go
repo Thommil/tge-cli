@@ -44,7 +44,7 @@ func (builder *Builder) initBuilder(packagePath string) error {
 
 	if _, err := os.Stat(builder.distPath); os.IsNotExist(err) {
 		log("NOTICE", fmt.Sprintf("creating dist folder: %s", builder.distPath))
-		if err = os.MkdirAll(builder.distPath, os.ModeDir|0722); err != nil {
+		if err = os.MkdirAll(builder.distPath, os.ModeDir|0755); err != nil {
 			return err
 		}
 	}
@@ -65,7 +65,7 @@ func (builder *Builder) checkCopyResources() error {
 	resourcesInPath := path.Join(builder.packagePath, builder.target)
 	var err error
 	if _, err = os.Stat(resourcesInPath); os.IsNotExist(err) {
-		if err = os.MkdirAll(resourcesInPath, os.ModeDir|0722); err != nil {
+		if err = os.MkdirAll(resourcesInPath, os.ModeDir|0755); err != nil {
 			return err
 		}
 		if err = copy.Copy(path.Join(builder.tgeRootPath, tgeTemplatePath, builder.target), resourcesInPath); err != nil {
@@ -277,7 +277,7 @@ func (builder *Builder) buildBrowser(packagePath string) error {
 	// Assets
 	assetsOutPath := path.Join(builder.distPath, assetsPath)
 	if _, err := os.Stat(assetsOutPath); os.IsNotExist(err) {
-		if err := os.MkdirAll(assetsOutPath, os.ModeDir|0722); err != nil {
+		if err := os.MkdirAll(assetsOutPath, os.ModeDir|0755); err != nil {
 			return err
 		}
 		if err := copy.Copy(builder.assetsPath, assetsOutPath); err != nil {
@@ -444,7 +444,7 @@ func (builder *Builder) buildDesktop(packagePath string) error {
 		// Assets
 		assetsOutPath = path.Join(builder.distPath, assetsPath)
 		if _, err := os.Stat(assetsOutPath); os.IsNotExist(err) {
-			if err := os.MkdirAll(assetsOutPath, os.ModeDir|0722); err != nil {
+			if err := os.MkdirAll(assetsOutPath, os.ModeDir|0755); err != nil {
 				return err
 			}
 			if err := copy.Copy(builder.assetsPath, assetsOutPath); err != nil {
