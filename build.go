@@ -344,93 +344,105 @@ func (builder *Builder) buildDesktop(packagePath string) error {
 		}
 
 		// Packaging
-		appifybin, err := exec.LookPath("appify")
-		if err != nil {
-			appifybin = path.Join(builder.goPath, "bin", "appify")
-			if _, err = os.Stat(appifybin); os.IsNotExist(err) {
-				log("NOTICE", "installing appify in your workspace")
-				cmd = exec.Command("go", "get", "github.com/machinebox/appify")
+		if !builder.devMode {
+			appifybin, err := exec.LookPath("appify")
+			if err != nil {
+				appifybin = path.Join(builder.goPath, "bin", "appify")
+				if _, err = os.Stat(appifybin); os.IsNotExist(err) {
+					log("NOTICE", "installing appify in your workspace")
+					cmd = exec.Command("go", "get", "github.com/machinebox/appify")
+					cmd.Env = append(os.Environ(),
+						fmt.Sprintf("GOPATH=%s", builder.goPath),
+					)
+					cmd.Stdout = os.Stdout
+					cmd.Stderr = os.Stderr
+					if err := cmd.Run(); err != nil {
+						appifybin = ""
+						log("WARNING", "failed to install appify, unable to package MacOS application")
+					}
+				}
+			}
+
+			if appifybin != "" {
+				os.Chdir(builder.distPath)
+				cmd := exec.Command(appifybin, "-name", builder.programName, "-icon",
+					path.Join(builder.packagePath, builder.target, "icon.png"), path.Join(builder.distPath, builder.programName))
 				cmd.Env = append(os.Environ(),
 					fmt.Sprintf("GOPATH=%s", builder.goPath),
 				)
 				cmd.Stdout = os.Stdout
 				cmd.Stderr = os.Stderr
 				if err := cmd.Run(); err != nil {
-					appifybin = ""
-					log("WARNING", "failed to install appify, unable to package MacOS application")
+					log("WARNING", "failed to package MacOS application")
 				}
 			}
-		}
 
-		if appifybin != "" {
-			os.Chdir(builder.distPath)
-			cmd := exec.Command(appifybin, "-name", builder.programName, "-icon",
-				path.Join(builder.packagePath, builder.target, "icon.png"), path.Join(builder.distPath, builder.programName))
-			cmd.Env = append(os.Environ(),
-				fmt.Sprintf("GOPATH=%s", builder.goPath),
-			)
-			cmd.Stdout = os.Stdout
-			cmd.Stderr = os.Stderr
-			if err := cmd.Run(); err != nil {
-				log("WARNING", "failed to package MacOS application")
+			os.RemoveAll(path.Join(builder.distPath, binaryFile))
+
+			// Assets
+			assetsOutPath = path.Join(builder.distPath, fmt.Sprintf("%s.app", builder.programName), "Contents", "Resources")
+			log("NOTICE", fmt.Sprintf("Copying assets in dist: %s", assetsOutPath))
+			if err := copy.Copy(builder.assetsPath, assetsOutPath); err != nil {
+				return err
 			}
-		}
-
-		os.RemoveAll(path.Join(builder.distPath, binaryFile))
-
-		// Assets
-		assetsOutPath = path.Join(builder.distPath, fmt.Sprintf("%s.app", builder.programName), "Contents", "Resources")
-		log("NOTICE", fmt.Sprintf("Copying assets in dist: %s", assetsOutPath))
-		if err := copy.Copy(builder.assetsPath, assetsOutPath); err != nil {
-			return err
 		}
 
 	case "windows":
 		// Packaging
-		goversioninfobin, err := exec.LookPath("goversioninfo.exe")
-		if err != nil {
-			goversioninfobin = path.Join(builder.goPath, "bin", "goversioninfo.exe")
-			if _, err = os.Stat(goversioninfobin); os.IsNotExist(err) {
-				log("NOTICE", "installing goversioninfo in your workspace")
-				cmd = exec.Command("go", "get", "github.com/josephspurrier/goversioninfo/cmd/goversioninfo")
+		if !builder.devMode {
+			goversioninfobin, err := exec.LookPath("goversioninfo.exe")
+			if err != nil {
+				goversioninfobin = path.Join(builder.goPath, "bin", "goversioninfo.exe")
+				if _, err = os.Stat(goversioninfobin); os.IsNotExist(err) {
+					log("NOTICE", "installing goversioninfo in your workspace")
+					cmd = exec.Command("go", "get", "github.com/josephspurrier/goversioninfo/cmd/goversioninfo")
+					cmd.Env = append(os.Environ(),
+						fmt.Sprintf("GOPATH=%s", builder.goPath),
+					)
+					cmd.Stdout = os.Stdout
+					cmd.Stderr = os.Stderr
+					if err := cmd.Run(); err != nil {
+						goversioninfobin = ""
+						log("WARNING", "failed to install goversioninfo, unable to package Windows application")
+					}
+				}
+			}
+
+			if goversioninfobin != "" {
+				if err := decentcopy.Copy(path.Join(builder.packagePath, builder.target, "versioninfo.json"), path.Join(builder.packagePath, "versioninfo.json")); err != nil {
+					log("WARNING", "failed to prepare package for Windows application")
+				} else {
+					defer os.Remove(path.Join(builder.packagePath, "resource_windows_386.syso"))
+					defer os.Remove(path.Join(builder.packagePath, "resource_windows_amd64.syso"))
+				}
+				defer os.Remove(path.Join(builder.packagePath, "versioninfo.json"))
+
+				cmd := exec.Command(goversioninfobin, "-platform-specific=true", "-manifest", path.Join(builder.packagePath, builder.target, "main.exe.manifest"), "-icon",
+					path.Join(builder.packagePath, builder.target, "icon.ico"))
 				cmd.Env = append(os.Environ(),
 					fmt.Sprintf("GOPATH=%s", builder.goPath),
 				)
 				cmd.Stdout = os.Stdout
 				cmd.Stderr = os.Stderr
 				if err := cmd.Run(); err != nil {
-					goversioninfobin = ""
-					log("WARNING", "failed to install goversioninfo, unable to package Windows application")
+					log("WARNING", "failed to prepare package for Windows application")
 				}
 			}
 		}
 
-		if goversioninfobin != "" {
-			if err := decentcopy.Copy(path.Join(builder.packagePath, builder.target, "versioninfo.json"), path.Join(builder.packagePath, "versioninfo.json")); err != nil {
-				log("WARNING", "failed to prepare package for Windows application")
-			} else {
-				defer os.Remove(path.Join(builder.packagePath, "resource_windows_386.syso"))
-				defer os.Remove(path.Join(builder.packagePath, "resource_windows_amd64.syso"))
-			}
-			defer os.Remove(path.Join(builder.packagePath, "versioninfo.json"))
-
-			cmd := exec.Command(goversioninfobin, "-platform-specific=true", "-manifest", path.Join(builder.packagePath, builder.target, "main.exe.manifest"), "-icon",
-				path.Join(builder.packagePath, builder.target, "icon.ico"))
-			cmd.Env = append(os.Environ(),
-				fmt.Sprintf("GOPATH=%s", builder.goPath),
-			)
-			cmd.Stdout = os.Stdout
-			cmd.Stderr = os.Stderr
-			if err := cmd.Run(); err != nil {
-				log("WARNING", "failed to prepare package for Windows application")
-			}
-		}
-
 		// Build
-		if builder.verbose {
-			cmd = exec.Command("go", "build", "-ldflags", "-H=windowsgui", "-v", "-o", path.Join(builder.distPath, binaryFile))
+		if builder.devMode {
+			if builder.verbose {
+				cmd = exec.Command("go", "build", "-v", "-o", path.Join(builder.distPath, binaryFile))
+			} else {
+				cmd = exec.Command("go", "build", "-o", path.Join(builder.distPath, binaryFile))
+			}
 		} else {
-			cmd = exec.Command("go", "build", "-ldflags", "-H=windowsgui", "-o", path.Join(builder.distPath, binaryFile))
+			if builder.verbose {
+				cmd = exec.Command("go", "build", "-ldflags", "-H=windowsgui", "-v", "-o", path.Join(builder.distPath, binaryFile))
+			} else {
+				cmd = exec.Command("go", "build", "-ldflags", "-H=windowsgui", "-o", path.Join(builder.distPath, binaryFile))
+			}
 		}
 		cmd.Env = append(os.Environ(),
 			fmt.Sprintf("GOPATH=%s", builder.goPath),
@@ -442,22 +454,24 @@ func (builder *Builder) buildDesktop(packagePath string) error {
 		}
 
 		// Assets
-		assetsOutPath = path.Join(builder.distPath, assetsPath)
-		if _, err := os.Stat(assetsOutPath); os.IsNotExist(err) {
-			if err := os.MkdirAll(assetsOutPath, os.ModeDir|0755); err != nil {
-				return err
+		if !builder.devMode {
+			assetsOutPath = path.Join(builder.distPath, assetsPath)
+			if _, err := os.Stat(assetsOutPath); os.IsNotExist(err) {
+				if err := os.MkdirAll(assetsOutPath, os.ModeDir|0755); err != nil {
+					return err
+				}
+				if err := copy.Copy(builder.assetsPath, assetsOutPath); err != nil {
+					return err
+				}
+				log("NOTICE", fmt.Sprintf("Copying assets in dist: %s", assetsOutPath))
+			} else if !builder.devMode {
+				log("NOTICE", fmt.Sprintf("Copying assets in dist: %s", assetsOutPath))
+				if err := copy.Copy(builder.assetsPath, assetsOutPath); err != nil {
+					return err
+				}
+			} else {
+				log("NOTICE", fmt.Sprintf("Skipping assets (DEV mode), found in dist: %s", assetsOutPath))
 			}
-			if err := copy.Copy(builder.assetsPath, assetsOutPath); err != nil {
-				return err
-			}
-			log("NOTICE", fmt.Sprintf("Copying assets in dist: %s", assetsOutPath))
-		} else if !builder.devMode {
-			log("NOTICE", fmt.Sprintf("Copying assets in dist: %s", assetsOutPath))
-			if err := copy.Copy(builder.assetsPath, assetsOutPath); err != nil {
-				return err
-			}
-		} else {
-			log("NOTICE", fmt.Sprintf("Skipping assets (DEV mode), found in dist: %s", assetsOutPath))
 		}
 	}
 
@@ -532,23 +546,24 @@ Usage:
 The package path must point to a valid TGE application, the generated
 application will be stored in the dist/$TARGET folder.
 
--target defines the application target:
-	desktop (default)
-	browser
-	android
-	ios
+-target 	defines the application target:
+				desktop (default)
+				browser
+				android
+				ios
 	
-For desktop target, the generated application depends on current OS:
-	MacOS   -> darwin
-	Windows -> windows
-	Linux   -> linux
+			For desktop target, the generated application depends on current OS:
+				MacOS   -> darwin
+				Windows -> windows
+				Linux   -> linux
 	
-For each target, the corresponding folder in your workspace will contain
-additional ressources for more customization (see README.md files)
+			For each target, the corresponding folder in your workspace will contain
+			additional ressources for more customization (see README.md files)
 
--dev flag allows to generate application faster by omitting assets copy,
-on Android the resulting APK will support all architectures.
+-dev 		dev flag allows to generate application faster by omitting assets copy.
+			Desktop applications are not packed and console remains opened.
+			on Android the resulting APK will support all architectures.
 
--v verbose output for debugging purpose
+-v 			verbose output for debugging purpose
 
--bundleid is mandatory for IOS build and can be obtained from Apple Developer.`
+-bundleid 	is mandatory for IOS build and can be obtained from Apple Developer.`
