@@ -43,6 +43,7 @@ func (builder *Builder) initBuilder(packagePath string) error {
 	}
 
 	if _, err := os.Stat(builder.distPath); os.IsNotExist(err) {
+		log("NOTICE", fmt.Sprintf("creating dist folder: %s", err))
 		if err = os.MkdirAll(builder.distPath, os.ModeDir|0722); err != nil {
 			return err
 		}
@@ -51,6 +52,7 @@ func (builder *Builder) initBuilder(packagePath string) error {
 	builder.assetsPath = path.Join(builder.packagePath, assetsPath)
 
 	if _, err := os.Stat(builder.assetsPath); os.IsNotExist(err) {
+		log("NOTICE", fmt.Sprintf("creating assets folder: %s", err))
 		if err = os.MkdirAll(builder.assetsPath, os.ModeDir|0622); err != nil {
 			return err
 		}
