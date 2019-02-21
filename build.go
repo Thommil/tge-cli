@@ -262,6 +262,7 @@ func (builder *Builder) buildBrowser(packagePath string) error {
 	return nil
 }
 
+//http://github.com/akavel/rsrc
 func (builder *Builder) buildDesktop(packagePath string) error {
 	switch runtime.GOOS {
 	case "darwin":
@@ -286,18 +287,10 @@ func (builder *Builder) buildDesktop(packagePath string) error {
 	if err := builder.copyResources(); err != nil {
 		log("WARNING", fmt.Sprintf("failed to copy resources/assets files: %s", err))
 	}
-	
+
 	var cmd *exec.Cmd
-	if builder.target == "windows" {
-		if builder.verbose {
-			cmd = exec.Command("go", "build", "-ldflags", "-H=windowsgui", "-v", "-o", path.Join(builder.distPath, binaryFile))
-		} else {
-			cmd = exec.Command("go", "build", "-ldflags", "-H=windowsgui", "-o", path.Join(builder.distPath, binaryFile))
-		}
-		cmd.Env = append(os.Environ(),
-			fmt.Sprintf("GOPATH=%s", builder.goPath),
-		)
-	} else {
+	switch builder.target {
+	case "darwin":
 		if builder.verbose {
 			cmd = exec.Command("go", "build", "-v", "-o", path.Join(builder.distPath, binaryFile))
 		} else {
@@ -306,15 +299,12 @@ func (builder *Builder) buildDesktop(packagePath string) error {
 		cmd.Env = append(os.Environ(),
 			fmt.Sprintf("GOPATH=%s", builder.goPath),
 		)
-	}	
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("failed to build application")
-	}
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		if err := cmd.Run(); err != nil {
+			return fmt.Errorf("failed to build application")
+		}
 
-	switch builder.target {
-	case "darwin":
 		appifybin, err := exec.LookPath("appify")
 		if err != nil {
 			appifybin = path.Join(builder.goPath, "bin", "appify")
@@ -347,7 +337,59 @@ func (builder *Builder) buildDesktop(packagePath string) error {
 			}
 		}
 	case "windows":
-		//TODO make Windows app
+		goversioninfobin, err := exec.LookPath("goversioninfo.exe")
+		if err != nil {
+			goversioninfobin = path.Join(builder.goPath, "bin", "goversioninfo.exe")
+			if _, err = os.Stat(goversioninfobin); os.IsNotExist(err) {
+				log("NOTICE", "installing goversioninfo in your workspace")
+				cmd = exec.Command("go", "get", "github.com/josephspurrier/goversioninfo/cmd/goversioninfo")
+				cmd.Env = append(os.Environ(),
+					fmt.Sprintf("GOPATH=%s", builder.goPath),
+				)
+				cmd.Stdout = os.Stdout
+				cmd.Stderr = os.Stderr
+				if err := cmd.Run(); err != nil {
+					goversioninfobin = ""
+					log("WARNING", "failed to install goversioninfo, unable to package Windows application")
+				}
+			}
+		}
+
+		if goversioninfobin != "" {
+			if err := decentcopy.Copy(path.Join(builder.packagePath, builder.target, "versioninfo.json"), path.Join(builder.packagePath, "versioninfo.json")); err != nil {
+				log("WARNING", "failed to prepare package for Windows application")
+			} else {
+				defer os.Remove(path.Join(builder.packagePath, "resource_windows_386.syso"))
+				defer os.Remove(path.Join(builder.packagePath, "resource_windows_amd64.syso"))
+			}
+			defer os.Remove(path.Join(builder.packagePath, "versioninfo.json"))
+
+			cmd := exec.Command(goversioninfobin, "-platform-specific=true", "-manifest", path.Join(builder.packagePath, builder.target, "main.exe.manifest"), "-icon",
+				path.Join(builder.packagePath, builder.target, "icon.ico"))
+			cmd.Env = append(os.Environ(),
+				fmt.Sprintf("GOPATH=%s", builder.goPath),
+			)
+			cmd.Stdout = os.Stdout
+			cmd.Stderr = os.Stderr
+			if err := cmd.Run(); err != nil {
+				log("WARNING", "failed to prepare package for Windows application")
+			}
+		}
+
+		if builder.verbose {
+			cmd = exec.Command("go", "build", "-ldflags", "-H=windowsgui", "-v", "-o", path.Join(builder.distPath, binaryFile))
+		} else {
+			cmd = exec.Command("go", "build", "-ldflags", "-H=windowsgui", "-o", path.Join(builder.distPath, binaryFile))
+		}
+		cmd.Env = append(os.Environ(),
+			fmt.Sprintf("GOPATH=%s", builder.goPath),
+		)
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		if err := cmd.Run(); err != nil {
+			return fmt.Errorf("failed to build application")
+		}
+
 	}
 	return nil
 }
