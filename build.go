@@ -286,16 +286,27 @@ func (builder *Builder) buildDesktop(packagePath string) error {
 	if err := builder.copyResources(); err != nil {
 		log("WARNING", fmt.Sprintf("failed to copy resources/assets files: %s", err))
 	}
-
+	
 	var cmd *exec.Cmd
-	if builder.verbose {
-		cmd = exec.Command("go", "build", "-v", "-o", path.Join(builder.distPath, binaryFile))
+	if builder.target == "windows" {
+		if builder.verbose {
+			cmd = exec.Command("go", "build", "-ldflags", "-H=windowsgui", "-v", "-o", path.Join(builder.distPath, binaryFile))
+		} else {
+			cmd = exec.Command("go", "build", "-ldflags", "-H=windowsgui", "-o", path.Join(builder.distPath, binaryFile))
+		}
+		cmd.Env = append(os.Environ(),
+			fmt.Sprintf("GOPATH=%s", builder.goPath),
+		)
 	} else {
-		cmd = exec.Command("go", "build", "-o", path.Join(builder.distPath, binaryFile))
-	}
-	cmd.Env = append(os.Environ(),
-		fmt.Sprintf("GOPATH=%s", builder.goPath),
-	)
+		if builder.verbose {
+			cmd = exec.Command("go", "build", "-v", "-o", path.Join(builder.distPath, binaryFile))
+		} else {
+			cmd = exec.Command("go", "build", "-o", path.Join(builder.distPath, binaryFile))
+		}
+		cmd.Env = append(os.Environ(),
+			fmt.Sprintf("GOPATH=%s", builder.goPath),
+		)
+	}	
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	if err := cmd.Run(); err != nil {
