@@ -16,6 +16,7 @@ const tgeTemplatePath = "template"
 var tgePackageName = "github.com/thommil/tge"
 
 const distPath = "dist"
+const assetsPath = "assets"
 
 type Builder struct {
 	//all
@@ -79,7 +80,7 @@ func (builder *Builder) installTGE() error {
 
 		log("NOTICE", fmt.Sprintf("Installing TGE in %s", builder.goPath))
 		log("NOTICE", fmt.Sprintf("Using GOPATH %s (set it for DEV)", builder.goPath))
-		cmd := exec.Command("go", "get", tgePackageName)
+		cmd := exec.Command("go", "get", "-u", tgePackageName)
 		cmd.Env = append(os.Environ(),
 			fmt.Sprintf("GOPATH=%s", builder.goPath),
 		)

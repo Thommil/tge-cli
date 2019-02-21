@@ -51,24 +51,17 @@ func (builder *Builder) initBuilder(packagePath string) error {
 	return nil
 }
 
-func (builder *Builder) copyResources() error {
+func (builder *Builder) checkCopyResources() error {
 	resourcesInPath := path.Join(builder.packagePath, builder.target)
-	boolFirstCopy := false
 	var err error
 	if _, err = os.Stat(resourcesInPath); os.IsNotExist(err) {
-		boolFirstCopy = true
-		if err = os.MkdirAll(resourcesInPath, os.ModeDir|0777); err != nil {
+		if err = os.MkdirAll(resourcesInPath, os.ModeDir|0722); err != nil {
 			return err
 		}
 		if err = copy.Copy(path.Join(builder.tgeRootPath, tgeTemplatePath, builder.target), resourcesInPath); err != nil {
 			return err
 		}
 		log("NOTICE", fmt.Sprintf("'%s' folder has been added to your project for customization (see README.md inside)", builder.target))
-	}
-	if boolFirstCopy || !builder.devMode {
-		if err = copy.Copy(resourcesInPath, builder.distPath); err != nil {
-			return err
-		}
 	}
 	return nil
 }
@@ -131,6 +124,7 @@ func (builder *Builder) installGoMobile() (string, error) {
 }
 
 func (builder *Builder) buildAndroid(packagePath string) error {
+	// Init
 	builder.target = "android"
 
 	if err := builder.initBuilder(packagePath); err != nil {
@@ -143,6 +137,11 @@ func (builder *Builder) buildAndroid(packagePath string) error {
 		return err
 	}
 
+	// Resources
+	if err := builder.checkCopyResources(); err != nil {
+		return fmt.Errorf("failed to copy resources files: %s", err)
+	}
+
 	if _, err := os.Stat(path.Join(builder.packagePath, "android", "AndroidManifest.xml")); os.IsNotExist(err) {
 		if err = decentcopy.Copy(path.Join(builder.tgeRootPath, tgeTemplatePath, "android", "AndroidManifest.xml"), path.Join(builder.packagePath, "AndroidManifest.xml")); err != nil {
 			return fmt.Errorf("WARNING", "failed to copy AndroidManifest.xml from TGE, using default gombile one: %s", err)
@@ -153,10 +152,6 @@ func (builder *Builder) buildAndroid(packagePath string) error {
 		}
 	}
 	defer os.Remove(path.Join(builder.packagePath, "AndroidManifest.xml"))
-
-	if err := builder.copyResources(); err != nil {
-		log("WARNING", fmt.Sprintf("failed to copy resources/assets files: %s", err))
-	}
 
 	if builder.devMode {
 		var cmd *exec.Cmd
@@ -197,6 +192,7 @@ func (builder *Builder) buildAndroid(packagePath string) error {
 }
 
 func (builder *Builder) buildIOS(packagePath string, bundleID string) error {
+	// Resources
 	builder.target = "ios"
 
 	if err := builder.initBuilder(packagePath); err != nil {
@@ -209,9 +205,12 @@ func (builder *Builder) buildIOS(packagePath string, bundleID string) error {
 		return err
 	}
 
-	if err := builder.copyResources(); err != nil {
-		log("WARNING", fmt.Sprintf("failed to copy resources/assets files: %s", err))
+	// Resources
+	if err := builder.checkCopyResources(); err != nil {
+		return fmt.Errorf("failed to copy resources files: %s", err)
 	}
+
+	// Build
 	var cmd *exec.Cmd
 	if builder.verbose {
 		cmd = exec.Command(gomobilebin, "build", "-v", "-target=ios", fmt.Sprintf("-bundleid=%s", bundleID), "-o", path.Join(builder.distPath, fmt.Sprintf("%s.app", builder.programName)))
@@ -231,16 +230,14 @@ func (builder *Builder) buildIOS(packagePath string, bundleID string) error {
 }
 
 func (builder *Builder) buildBrowser(packagePath string) error {
+	// Init
 	builder.target = "browser"
 
 	if err := builder.initBuilder(packagePath); err != nil {
 		return err
 	}
 
-	if err := builder.copyResources(); err != nil {
-		log("WARNING", fmt.Sprintf("failed to copy resources/assets files: %s", err))
-	}
-
+	// Build
 	var cmd *exec.Cmd
 	if builder.verbose {
 		cmd = exec.Command("go", "build", "-v", "-o", path.Join(builder.distPath, "main.wasm"))
@@ -258,12 +255,40 @@ func (builder *Builder) buildBrowser(packagePath string) error {
 		log("ERROR", "failed to build browser application")
 		return fmt.Errorf("failed to build application")
 	}
+	// Resources
+	if err := builder.checkCopyResources(); err != nil {
+		return fmt.Errorf("failed to retrieve resources files from TGE: %s", err)
+	}
+
+	if err := copy.Copy(path.Join(builder.packagePath, builder.target), builder.distPath); err != nil {
+		return fmt.Errorf("failed to copy resources files to dist: %s", err)
+	}
+
+	// Assets
+	assetsInPath := path.Join(builder.packagePath, assetsPath)
+	assetsOutPath := path.Join(builder.distPath, assetsPath)
+	if _, err := os.Stat(assetsOutPath); os.IsNotExist(err) {
+		if err := os.MkdirAll(assetsOutPath, os.ModeDir|0722); err != nil {
+			return err
+		}
+		if err := copy.Copy(assetsInPath, assetsOutPath); err != nil {
+			return err
+		}
+		log("NOTICE", fmt.Sprintf("Copying assets to dist: %s", assetsOutPath))
+	} else if !builder.devMode {
+		log("NOTICE", fmt.Sprintf("Copying assets to dist: %s", assetsOutPath))
+		if err := copy.Copy(assetsInPath, assetsOutPath); err != nil {
+			return err
+		}
+	} else {
+		log("NOTICE", fmt.Sprintf("Skipping assets (DEV mode), found in dist: %s", assetsOutPath))
+	}
 
 	return nil
 }
 
-//http://github.com/akavel/rsrc
 func (builder *Builder) buildDesktop(packagePath string) error {
+	// Init
 	switch runtime.GOOS {
 	case "darwin":
 		builder.target = "darwin"
@@ -284,13 +309,17 @@ func (builder *Builder) buildDesktop(packagePath string) error {
 		binaryFile = fmt.Sprintf("%s.exe", binaryFile)
 	}
 
-	if err := builder.copyResources(); err != nil {
-		log("WARNING", fmt.Sprintf("failed to copy resources/assets files: %s", err))
+	// Resources
+	if err := builder.checkCopyResources(); err != nil {
+		return fmt.Errorf("failed to retrieve resources files from TGE : %s", err)
 	}
 
+	// Build & packaging
 	var cmd *exec.Cmd
+	var assetsInPath, assetsOutPath string
 	switch builder.target {
 	case "darwin":
+		// Build
 		if builder.verbose {
 			cmd = exec.Command("go", "build", "-v", "-o", path.Join(builder.distPath, binaryFile))
 		} else {
@@ -305,6 +334,7 @@ func (builder *Builder) buildDesktop(packagePath string) error {
 			return fmt.Errorf("failed to build application")
 		}
 
+		// Packaging
 		appifybin, err := exec.LookPath("appify")
 		if err != nil {
 			appifybin = path.Join(builder.goPath, "bin", "appify")
@@ -326,7 +356,7 @@ func (builder *Builder) buildDesktop(packagePath string) error {
 		if appifybin != "" {
 			os.Chdir(builder.distPath)
 			cmd := exec.Command(appifybin, "-name", builder.programName, "-icon",
-				path.Join(builder.distPath, "icon.png"), path.Join(builder.distPath, builder.programName))
+				path.Join(builder.packagePath, builder.target, "icon.png"), path.Join(builder.distPath, builder.programName))
 			cmd.Env = append(os.Environ(),
 				fmt.Sprintf("GOPATH=%s", builder.goPath),
 			)
@@ -336,7 +366,20 @@ func (builder *Builder) buildDesktop(packagePath string) error {
 				log("WARNING", "failed to package MacOS application")
 			}
 		}
+
+		os.RemoveAll(path.Join(builder.distPath, binaryFile))
+
+		assetsInPath = path.Join(builder.packagePath, assetsPath)
+		assetsOutPath = path.Join(builder.distPath, fmt.Sprintf("%s.app", builder.programName), "Contents", "Resources")
+
+		// Assets
+		log("NOTICE", fmt.Sprintf("Copying assets in dist: %s", assetsOutPath))
+		if err := copy.Copy(assetsInPath, assetsOutPath); err != nil {
+			return err
+		}
+
 	case "windows":
+		// Packaging
 		goversioninfobin, err := exec.LookPath("goversioninfo.exe")
 		if err != nil {
 			goversioninfobin = path.Join(builder.goPath, "bin", "goversioninfo.exe")
@@ -376,6 +419,7 @@ func (builder *Builder) buildDesktop(packagePath string) error {
 			}
 		}
 
+		// Build
 		if builder.verbose {
 			cmd = exec.Command("go", "build", "-ldflags", "-H=windowsgui", "-v", "-o", path.Join(builder.distPath, binaryFile))
 		} else {
@@ -390,7 +434,28 @@ func (builder *Builder) buildDesktop(packagePath string) error {
 			return fmt.Errorf("failed to build application")
 		}
 
+		assetsInPath = path.Join(builder.packagePath, assetsPath)
+		assetsOutPath = path.Join(builder.distPath, assetsPath)
+
+		// Assets
+		if _, err := os.Stat(assetsOutPath); os.IsNotExist(err) {
+			if err := os.MkdirAll(assetsOutPath, os.ModeDir|0722); err != nil {
+				return err
+			}
+			if err := copy.Copy(assetsInPath, assetsOutPath); err != nil {
+				return err
+			}
+			log("NOTICE", fmt.Sprintf("Copying assets in dist: %s", assetsOutPath))
+		} else if !builder.devMode {
+			log("NOTICE", fmt.Sprintf("Copying assets in dist: %s", assetsOutPath))
+			if err := copy.Copy(assetsInPath, assetsOutPath); err != nil {
+				return err
+			}
+		} else {
+			log("NOTICE", fmt.Sprintf("Skipping assets (DEV mode), found in dist: %s", assetsOutPath))
+		}
 	}
+
 	return nil
 }
 
