@@ -48,7 +48,6 @@ func createBuilder() Builder {
 
 // Builder common
 func (builder *Builder) installTGE() error {
-	//go list -f '{{.Dir}}' github.com/thommil/tge
 	builder.goPath = os.Getenv("GOPATH")
 	if builder.goPath == "" {
 		builder.goPath = path.Join(builder.packagePath, tgeLocalGoPath)
@@ -78,7 +77,7 @@ func (builder *Builder) installTGE() error {
 			}
 		}
 
-		log("NOTICE", fmt.Sprintf("Installing TGE in %s", builder.packagePath))
+		log("NOTICE", fmt.Sprintf("Installing TGE in %s", builder.goPath))
 		log("NOTICE", fmt.Sprintf("Using GOPATH %s (set it for DEV)", builder.goPath))
 		cmd := exec.Command("go", "get", tgePackageName)
 		cmd.Env = append(os.Environ(),
