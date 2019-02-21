@@ -43,7 +43,7 @@ func (builder *Builder) initBuilder(packagePath string) error {
 	}
 
 	if _, err := os.Stat(builder.distPath); os.IsNotExist(err) {
-		log("NOTICE", fmt.Sprintf("creating dist folder: %s", err))
+		log("NOTICE", fmt.Sprintf("creating dist folder: %s", builder.distPath))
 		if err = os.MkdirAll(builder.distPath, os.ModeDir|0722); err != nil {
 			return err
 		}
@@ -52,7 +52,7 @@ func (builder *Builder) initBuilder(packagePath string) error {
 	builder.assetsPath = path.Join(builder.packagePath, assetsPath)
 
 	if _, err := os.Stat(builder.assetsPath); os.IsNotExist(err) {
-		log("NOTICE", fmt.Sprintf("creating assets folder: %s", err))
+		log("NOTICE", fmt.Sprintf("creating assets folder: %s", builder.assetsPath))
 		if err = os.MkdirAll(builder.assetsPath, os.ModeDir|0622); err != nil {
 			return err
 		}
@@ -71,7 +71,7 @@ func (builder *Builder) checkCopyResources() error {
 		if err = copy.Copy(path.Join(builder.tgeRootPath, tgeTemplatePath, builder.target), resourcesInPath); err != nil {
 			return err
 		}
-		log("NOTICE", fmt.Sprintf("'%s' folder has been added to your project for customization (see README.md inside)", builder.target))
+		log("NOTICE", fmt.Sprintf("folder '%s' has been added to your project for customization (see README.md inside)", builder.target))
 	}
 	return nil
 }
