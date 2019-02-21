@@ -22,7 +22,7 @@ func main() {
 	case "build":
 		doBuild(createBuilder())
 	case "version":
-		fmt.Printf("TGE v%s\n", tgeVersion)
+		fmt.Printf("TGE %s\n", tgeVersion)
 	default:
 		fmt.Println(usage)
 	}

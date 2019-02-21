@@ -99,14 +99,33 @@ func (builder *Builder) installGoMobile() (string, error) {
 		}
 	}
 
-	if _, err = os.Stat(path.Join(builder.goPath, "pkg", "gomobile", "ndk-toolchains")); os.IsNotExist(err) {
-		androidNDKPath := os.Getenv("ANDROID_NDK")
-		if androidNDKPath == "" {
-			return "", fmt.Errorf("ANDROID_NDK is not set (should be $ANDROID_HOME/ndk-bundle), see https://developer.android.com/ndk/guides/")
-		}
+	if builder.target == "android" {
+		if _, err = os.Stat(path.Join(builder.goPath, "pkg", "gomobile", "ndk-toolchains")); os.IsNotExist(err) {
+			androidHome := os.Getenv("ANDROID_HOME")
+			if androidHome == "" {
+				return "", fmt.Errorf("ANDROID_HOME is not set (must point to Android SDK)")
+			}
 
-		log("NOTICE", "initializing gomobile")
-		cmd := exec.Command(gomobilebin, "init", "-ndk", androidNDKPath)
+			androidNDKPath := path.Join(androidHome, "ndk-bundle")
+
+			if _, err = os.Stat(androidNDKPath); os.IsNotExist(err) {
+				return "", fmt.Errorf("ANDROID NDK not found in %s, see https://developer.android.com/ndk/guides/", androidNDKPath)
+			}
+
+			log("NOTICE", "initializing gomobile for Android")
+			cmd := exec.Command(gomobilebin, "init", "-ndk", androidNDKPath)
+			cmd.Env = append(os.Environ(),
+				fmt.Sprintf("GOPATH=%s", builder.goPath),
+			)
+			cmd.Stdout = os.Stdout
+			cmd.Stderr = os.Stderr
+			if err := cmd.Run(); err != nil {
+				return "", fmt.Errorf("failed to initialize gomobile")
+			}
+		}
+	} else {
+		log("NOTICE", "initializing gomobile for IOS")
+		cmd := exec.Command(gomobilebin, "init")
 		cmd.Env = append(os.Environ(),
 			fmt.Sprintf("GOPATH=%s", builder.goPath),
 		)
