@@ -53,7 +53,7 @@ func (builder *Builder) initBuilder(packagePath string) error {
 
 	if _, err := os.Stat(builder.assetsPath); os.IsNotExist(err) {
 		log("NOTICE", fmt.Sprintf("creating assets folder: %s", builder.assetsPath))
-		if err = os.MkdirAll(builder.assetsPath, os.ModeDir|0622); err != nil {
+		if err = os.MkdirAll(builder.assetsPath, os.ModeDir|0755); err != nil {
 			return err
 		}
 	}
