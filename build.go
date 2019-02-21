@@ -43,7 +43,15 @@ func (builder *Builder) initBuilder(packagePath string) error {
 	}
 
 	if _, err := os.Stat(builder.distPath); os.IsNotExist(err) {
-		if err = os.MkdirAll(builder.distPath, os.ModeDir|0777); err != nil {
+		if err = os.MkdirAll(builder.distPath, os.ModeDir|0622); err != nil {
+			return err
+		}
+	}
+
+	builder.assetsPath = path.Join(builder.packagePath, assetsPath)
+
+	if _, err := os.Stat(builder.assetsPath); os.IsNotExist(err) {
+		if err = os.MkdirAll(builder.assetsPath, os.ModeDir|0622); err != nil {
 			return err
 		}
 	}
@@ -265,19 +273,18 @@ func (builder *Builder) buildBrowser(packagePath string) error {
 	}
 
 	// Assets
-	assetsInPath := path.Join(builder.packagePath, assetsPath)
 	assetsOutPath := path.Join(builder.distPath, assetsPath)
 	if _, err := os.Stat(assetsOutPath); os.IsNotExist(err) {
 		if err := os.MkdirAll(assetsOutPath, os.ModeDir|0722); err != nil {
 			return err
 		}
-		if err := copy.Copy(assetsInPath, assetsOutPath); err != nil {
+		if err := copy.Copy(builder.assetsPath, assetsOutPath); err != nil {
 			return err
 		}
 		log("NOTICE", fmt.Sprintf("Copying assets to dist: %s", assetsOutPath))
 	} else if !builder.devMode {
 		log("NOTICE", fmt.Sprintf("Copying assets to dist: %s", assetsOutPath))
-		if err := copy.Copy(assetsInPath, assetsOutPath); err != nil {
+		if err := copy.Copy(builder.assetsPath, assetsOutPath); err != nil {
 			return err
 		}
 	} else {
@@ -316,7 +323,7 @@ func (builder *Builder) buildDesktop(packagePath string) error {
 
 	// Build & packaging
 	var cmd *exec.Cmd
-	var assetsInPath, assetsOutPath string
+	var assetsOutPath string
 	switch builder.target {
 	case "darwin":
 		// Build
@@ -369,12 +376,10 @@ func (builder *Builder) buildDesktop(packagePath string) error {
 
 		os.RemoveAll(path.Join(builder.distPath, binaryFile))
 
-		assetsInPath = path.Join(builder.packagePath, assetsPath)
-		assetsOutPath = path.Join(builder.distPath, fmt.Sprintf("%s.app", builder.programName), "Contents", "Resources")
-
 		// Assets
+		assetsOutPath = path.Join(builder.distPath, fmt.Sprintf("%s.app", builder.programName), "Contents", "Resources")
 		log("NOTICE", fmt.Sprintf("Copying assets in dist: %s", assetsOutPath))
-		if err := copy.Copy(assetsInPath, assetsOutPath); err != nil {
+		if err := copy.Copy(builder.assetsPath, assetsOutPath); err != nil {
 			return err
 		}
 
@@ -434,21 +439,19 @@ func (builder *Builder) buildDesktop(packagePath string) error {
 			return fmt.Errorf("failed to build application")
 		}
 
-		assetsInPath = path.Join(builder.packagePath, assetsPath)
-		assetsOutPath = path.Join(builder.distPath, assetsPath)
-
 		// Assets
+		assetsOutPath = path.Join(builder.distPath, assetsPath)
 		if _, err := os.Stat(assetsOutPath); os.IsNotExist(err) {
 			if err := os.MkdirAll(assetsOutPath, os.ModeDir|0722); err != nil {
 				return err
 			}
-			if err := copy.Copy(assetsInPath, assetsOutPath); err != nil {
+			if err := copy.Copy(builder.assetsPath, assetsOutPath); err != nil {
 				return err
 			}
 			log("NOTICE", fmt.Sprintf("Copying assets in dist: %s", assetsOutPath))
 		} else if !builder.devMode {
 			log("NOTICE", fmt.Sprintf("Copying assets in dist: %s", assetsOutPath))
-			if err := copy.Copy(assetsInPath, assetsOutPath); err != nil {
+			if err := copy.Copy(builder.assetsPath, assetsOutPath); err != nil {
 				return err
 			}
 		} else {

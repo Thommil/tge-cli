@@ -27,11 +27,10 @@ type Builder struct {
 	tgeRootPath string
 	verbose     bool
 
-	//init
-
 	//build
 	target      string
 	devMode     bool
+	assetsPath  string
 	distPath    string
 	programName string
 }
