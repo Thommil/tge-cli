@@ -43,7 +43,7 @@ func (builder *Builder) initBuilder(packagePath string) error {
 	}
 
 	if _, err := os.Stat(builder.distPath); os.IsNotExist(err) {
-		if err = os.MkdirAll(builder.distPath, os.ModeDir|0622); err != nil {
+		if err = os.MkdirAll(builder.distPath, os.ModeDir|0722); err != nil {
 			return err
 		}
 	}
