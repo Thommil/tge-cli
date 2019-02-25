@@ -82,7 +82,7 @@ func (builder *Builder) installGoMobile() (string, error) {
 		gomobilebin = path.Join(builder.goPath, "bin", "gomobile")
 		if _, err = os.Stat(gomobilebin); os.IsNotExist(err) {
 			log("NOTICE", "installing gomobile in your workspace")
-			cmd := exec.Command("go", "get", "golang.org/x/mobile/cmd/gomobile")
+			cmd := exec.Command("go", "get", "github.com/thommil/mobile")
 			cmd.Env = append(os.Environ(),
 				fmt.Sprintf("GOPATH=%s", builder.goPath),
 			)
