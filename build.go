@@ -82,7 +82,7 @@ func (builder *Builder) installGoMobile() (string, error) {
 		gomobilebin = path.Join(builder.goPath, "bin", "gomobile")
 		if _, err = os.Stat(gomobilebin); os.IsNotExist(err) {
 			log("NOTICE", "installing gomobile in your workspace")
-			cmd := exec.Command("go", "get", "github.com/thommil/mobile")
+			cmd := exec.Command("go", "get", "github.com/thommil/tge-mobile/cmd/gomobile")
 			cmd.Env = append(os.Environ(),
 				fmt.Sprintf("GOPATH=%s", builder.goPath),
 			)
@@ -95,20 +95,9 @@ func (builder *Builder) installGoMobile() (string, error) {
 	}
 
 	if builder.target == "android" {
-		if _, err = os.Stat(path.Join(builder.goPath, "pkg", "gomobile", "ndk-toolchains")); os.IsNotExist(err) {
-			androidHome := os.Getenv("ANDROID_HOME")
-			if androidHome == "" {
-				return "", fmt.Errorf("ANDROID_HOME is not set (must point to Android SDK)")
-			}
-
-			androidNDKPath := path.Join(androidHome, "ndk-bundle")
-
-			if _, err = os.Stat(androidNDKPath); os.IsNotExist(err) {
-				return "", fmt.Errorf("ANDROID NDK not found in %s, see https://developer.android.com/ndk/guides/", androidNDKPath)
-			}
-
-			log("NOTICE", "initializing gomobile for Android")
-			cmd := exec.Command(gomobilebin, "init", "-ndk", androidNDKPath)
+		if _, err = os.Stat(path.Join(builder.goPath, "pkg", "gomobile")); os.IsNotExist(err) {
+			log("NOTICE", "initializing gomobile")
+			cmd := exec.Command(gomobilebin, "init")
 			cmd.Env = append(os.Environ(),
 				fmt.Sprintf("GOPATH=%s", builder.goPath),
 			)
@@ -117,17 +106,6 @@ func (builder *Builder) installGoMobile() (string, error) {
 			if err := cmd.Run(); err != nil {
 				return "", fmt.Errorf("failed to initialize gomobile")
 			}
-		}
-	} else {
-		log("NOTICE", "initializing gomobile for IOS")
-		cmd := exec.Command(gomobilebin, "init")
-		cmd.Env = append(os.Environ(),
-			fmt.Sprintf("GOPATH=%s", builder.goPath),
-		)
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
-		if err := cmd.Run(); err != nil {
-			return "", fmt.Errorf("failed to initialize gomobile")
 		}
 	}
 	return gomobilebin, nil
@@ -166,7 +144,7 @@ func (builder *Builder) buildAndroid(packagePath string) error {
 	if builder.devMode {
 		var cmd *exec.Cmd
 		if builder.verbose {
-			cmd = exec.Command(gomobilebin, "build", "-v", "-target=android", "-o", path.Join(builder.distPath, fmt.Sprintf("%s.apk", builder.programName)))
+			cmd = exec.Command(gomobilebin, "build", "-target=android", "-o", path.Join(builder.distPath, fmt.Sprintf("%s.apk", builder.programName)))
 		} else {
 			cmd = exec.Command(gomobilebin, "build", "-target=android", "-o", path.Join(builder.distPath, fmt.Sprintf("%s.apk", builder.programName)))
 		}
