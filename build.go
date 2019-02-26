@@ -143,11 +143,15 @@ func (builder *Builder) buildAndroid(packagePath string) error {
 
 	if builder.devMode {
 		var cmd *exec.Cmd
+		cmdParams := []string{"build", "build", "-target=android"}
 		if builder.verbose {
-			cmd = exec.Command(gomobilebin, "build", "-target=android", "-o", path.Join(builder.distPath, fmt.Sprintf("%s.apk", builder.programName)))
-		} else {
-			cmd = exec.Command(gomobilebin, "build", "-target=android", "-o", path.Join(builder.distPath, fmt.Sprintf("%s.apk", builder.programName)))
+			cmdParams = append(cmdParams, "-v")
 		}
+		if builder.devMode {
+			cmdParams = append(cmdParams, "-tags=debug")
+		}
+		cmdParams = append(cmdParams, "-o", path.Join(builder.distPath, fmt.Sprintf("%s.apk", builder.programName)))
+		cmd = exec.Command(gomobilebin, cmdParams...)
 		cmd.Env = append(os.Environ(),
 			fmt.Sprintf("GOPATH=%s", builder.goPath),
 		)
@@ -159,11 +163,15 @@ func (builder *Builder) buildAndroid(packagePath string) error {
 	} else {
 		for _, t := range []string{"arm", "386", "amd64", "arm64"} {
 			var cmd *exec.Cmd
+			cmdParams := []string{"build", "build", fmt.Sprintf("-target=android/%s", t)}
 			if builder.verbose {
-				cmd = exec.Command(gomobilebin, "build", "-v", fmt.Sprintf("-target=android/%s", t), "-o", path.Join(builder.distPath, fmt.Sprintf("%s-%s.apk", builder.programName, t)))
-			} else {
-				cmd = exec.Command(gomobilebin, "build", fmt.Sprintf("-target=android/%s", t), "-o", path.Join(builder.distPath, fmt.Sprintf("%s-%s.apk", builder.programName, t)))
+				cmdParams = append(cmdParams, "-v")
 			}
+			if builder.devMode {
+				cmdParams = append(cmdParams, "-tags=debug")
+			}
+			cmdParams = append(cmdParams, "-o", path.Join(builder.distPath, fmt.Sprintf("%s-%s.apk", builder.programName, t)))
+			cmd = exec.Command(gomobilebin, cmdParams...)
 			cmd.Env = append(os.Environ(),
 				fmt.Sprintf("GOPATH=%s", builder.goPath),
 			)
@@ -200,11 +208,15 @@ func (builder *Builder) buildIOS(packagePath string, bundleID string) error {
 
 	// Build
 	var cmd *exec.Cmd
+	cmdParams := []string{"build", "-target=ios", fmt.Sprintf("-bundleid=%s", bundleID)}
 	if builder.verbose {
-		cmd = exec.Command(gomobilebin, "build", "-v", "-target=ios", fmt.Sprintf("-bundleid=%s", bundleID), "-o", path.Join(builder.distPath, fmt.Sprintf("%s.app", builder.programName)))
-	} else {
-		cmd = exec.Command(gomobilebin, "build", "-target=ios", fmt.Sprintf("-bundleid=%s", bundleID), "-o", path.Join(builder.distPath, fmt.Sprintf("%s.app", builder.programName)))
+		cmdParams = append(cmdParams, "-v")
 	}
+	if builder.devMode {
+		cmdParams = append(cmdParams, "-tags=debug")
+	}
+	cmdParams = append(cmdParams, "-o", path.Join(builder.distPath, fmt.Sprintf("%s.app", builder.programName)))
+	cmd = exec.Command(gomobilebin, cmdParams...)
 	cmd.Env = append(os.Environ(),
 		fmt.Sprintf("GOPATH=%s", builder.goPath),
 	)
@@ -227,11 +239,15 @@ func (builder *Builder) buildBrowser(packagePath string) error {
 
 	// Build
 	var cmd *exec.Cmd
+	cmdParams := []string{"build"}
 	if builder.verbose {
-		cmd = exec.Command("go", "build", "-v", "-o", path.Join(builder.distPath, "main.wasm"))
-	} else {
-		cmd = exec.Command("go", "build", "-o", path.Join(builder.distPath, "main.wasm"))
+		cmdParams = append(cmdParams, "-v")
 	}
+	if builder.devMode {
+		cmdParams = append(cmdParams, "-tags=debug")
+	}
+	cmdParams = append(cmdParams, "-o", path.Join(builder.distPath, "main.wasm"))
+	cmd = exec.Command("go", cmdParams...)
 	cmd.Env = append(os.Environ(),
 		fmt.Sprintf("GOPATH=%s", builder.goPath),
 		"GOOS=js",
@@ -307,11 +323,15 @@ func (builder *Builder) buildDesktop(packagePath string) error {
 	switch builder.target {
 	case "darwin":
 		// Build
+		cmdParams := []string{"build"}
 		if builder.verbose {
-			cmd = exec.Command("go", "build", "-v", "-o", path.Join(builder.distPath, binaryFile))
-		} else {
-			cmd = exec.Command("go", "build", "-o", path.Join(builder.distPath, binaryFile))
+			cmdParams = append(cmdParams, "-v")
 		}
+		if builder.devMode {
+			cmdParams = append(cmdParams, "-tags=debug")
+		}
+		cmdParams = append(cmdParams, "-o", path.Join(builder.distPath, binaryFile))
+		cmd = exec.Command("go", cmdParams...)
 		cmd.Env = append(os.Environ(),
 			fmt.Sprintf("GOPATH=%s", builder.goPath),
 		)
@@ -409,19 +429,17 @@ func (builder *Builder) buildDesktop(packagePath string) error {
 		}
 
 		// Build
-		if builder.devMode {
-			if builder.verbose {
-				cmd = exec.Command("go", "build", "-v", "-o", path.Join(builder.distPath, binaryFile))
-			} else {
-				cmd = exec.Command("go", "build", "-o", path.Join(builder.distPath, binaryFile))
-			}
-		} else {
-			if builder.verbose {
-				cmd = exec.Command("go", "build", "-ldflags", "-H=windowsgui", "-v", "-o", path.Join(builder.distPath, binaryFile))
-			} else {
-				cmd = exec.Command("go", "build", "-ldflags", "-H=windowsgui", "-o", path.Join(builder.distPath, binaryFile))
-			}
+		cmdParams := []string{"build"}
+		if builder.verbose {
+			cmdParams = append(cmdParams, "-v")
 		}
+		if builder.devMode {
+			cmdParams = append(cmdParams, "-tags=debug")
+		} else {
+			cmdParams = append(cmdParams, "-ldflags", "-H=windowsgui")
+		}
+		cmdParams = append(cmdParams, "-o", path.Join(builder.distPath, binaryFile))
+		cmd = exec.Command("go", cmdParams...)
 		cmd.Env = append(os.Environ(),
 			fmt.Sprintf("GOPATH=%s", builder.goPath),
 		)
@@ -519,29 +537,30 @@ func doBuild(builder Builder) {
 var buildUsage = `tge-cli build build and deploys TGE applications.
 	
 Usage:
-	tge-cli build [-target TARGET] [-dev] [-v] [-bundleid ID] packagePath
+    tge-cli build [-target TARGET] [-dev] [-v] [-bundleid ID] packagePath
 
 The package path must point to a valid TGE application, the generated
 application will be stored in the dist/$TARGET folder.
 
--target 	defines the application target:
-				desktop (default)
-				browser
-				android
-				ios
-	
-			For desktop target, the generated application depends on current OS:
-				MacOS   -> darwin
-				Windows -> windows
-				Linux   -> linux
-	
-			For each target, the corresponding folder in your workspace will contain
-			additional ressources for more customization (see README.md files)
+-target     defines the application target:
+                desktop (default)
+                browser
+                android
+                ios
 
--dev 		dev flag allows to generate application faster by omitting assets copy.
-			Desktop applications are not packed and console remains opened.
-			on Android the resulting APK will support all architectures.
+            For desktop target, the generated application depends on current OS:
+                MacOS   -> darwin
+                Windows -> windows
+                Linux   -> linux
 
--v 			verbose output for debugging purpose
+            For each target, the corresponding folder in your workspace will contain
+            additional ressources for more customization (see README.md files)
 
--bundleid 	is mandatory for IOS build and can be obtained from Apple Developer.`
+-dev        dev flag allows to generate application faster by omitting assets copy.
+            Desktop applications are not packed and console remains opened.
+			On Android the resulting APK will support all architectures.
+            Debug mode is also enabled.
+
+-v          verbose output for debugging purpose
+
+-bundleid  is mandatory for IOS build and can be obtained from Apple Developer.`

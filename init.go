@@ -70,10 +70,10 @@ func doInit(builder Builder) {
 var initUsage = `tge-cli init creates a TGE workspace.
 	
 Usage:
-	tge-cli init package
+    tge-cli init package
 
 Package argument can be of several forms:
-	local 	ex: my-app
-	url		ex: github.com/me/my-app
+    local   ex: my-app
+    url     ex: github.com/me/my-app
 	
 In both cases, the last token will be used as worspace root.`

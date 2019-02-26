@@ -31,14 +31,14 @@ func main() {
 var usage = `TGE command line tool creates, builds and packages TGE applications.
 
 To install:
-	$ go get github.com/thommil/tge-cli
+    $ go get github.com/thommil/tge-cli
 	
 Usage:
-	tge-cli [command] [options] arguments
+    tge-cli [command] [options] arguments
 	
 Available commands:
-	init 	Create a new TGE project
-	build	Build & package TGE applications
-	version Print TGE version
+    init      Create a new TGE project
+    build     Build & package TGE applications
+    version   Print TGE version
 
 Use 'tge-cli command -h ' for get help on commands.`
