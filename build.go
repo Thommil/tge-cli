@@ -143,7 +143,7 @@ func (builder *Builder) buildAndroid(packagePath string) error {
 
 	if builder.devMode {
 		var cmd *exec.Cmd
-		cmdParams := []string{"build", "build", "-target=android"}
+		cmdParams := []string{"build", "-target=android"}
 		if builder.verbose {
 			cmdParams = append(cmdParams, "-v")
 		}
@@ -163,7 +163,7 @@ func (builder *Builder) buildAndroid(packagePath string) error {
 	} else {
 		for _, t := range []string{"arm", "386", "amd64", "arm64"} {
 			var cmd *exec.Cmd
-			cmdParams := []string{"build", "build", fmt.Sprintf("-target=android/%s", t)}
+			cmdParams := []string{"build", fmt.Sprintf("-target=android/%s", t)}
 			if builder.verbose {
 				cmdParams = append(cmdParams, "-v")
 			}
