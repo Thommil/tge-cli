@@ -144,8 +144,8 @@ func checkGoVersion() error {
 		// Ignore unknown versions; it's probably a devel version.
 		return nil
 	}
-	if minor < 11 {
-		err = fmt.Errorf("Go 1.11 or newer is required")
+	if minor < 12 {
+		err = fmt.Errorf("Go 1.12 or newer is required")
 		log("ERROR", err.Error())
 		return err
 	}
