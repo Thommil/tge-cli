@@ -4,7 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
-	"path"
+	"path/filepath"
 	"strings"
 
 	"github.com/otiai10/copy"
@@ -13,9 +13,9 @@ import (
 func (builder *Builder) initWorkspace(packageArg string) error {
 	builder.packageName = packageArg
 	if index := strings.LastIndex(builder.packageName, "/"); index >= 0 {
-		builder.packagePath = path.Join(builder.cwd, builder.packageName[index:])
+		builder.packagePath = filepath.Join(builder.cwd, builder.packageName[index:])
 	} else {
-		builder.packagePath = path.Join(builder.cwd, builder.packageName)
+		builder.packagePath = filepath.Join(builder.cwd, builder.packageName)
 	}
 
 	if _, err := os.Stat(builder.packagePath); os.IsNotExist(err) {
@@ -36,9 +36,9 @@ func (builder *Builder) initWorkspace(packageArg string) error {
 	}
 
 	log("NOTICE", "Initializing project files")
-	if err := copy.Copy(path.Join(builder.tgeRootPath, tgeTemplatePath), builder.packagePath); err != nil {
+	if err := copy.Copy(filepath.Join(builder.tgeRootPath, tgeTemplatePath), builder.packagePath); err != nil {
 		log("ERROR", err.Error())
-		return fmt.Errorf("Failed to copy project files, try manually from '%s", path.Join(builder.tgeRootPath, tgeTemplatePath))
+		return fmt.Errorf("Failed to copy project files, try manually from '%s", filepath.Join(builder.tgeRootPath, tgeTemplatePath))
 	}
 
 	return nil

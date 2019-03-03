@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"path"
+	"path/filepath"
 	"runtime"
 
 	decentcopy "github.com/hugocarreira/go-decent-copy"
@@ -13,8 +13,8 @@ import (
 )
 
 func (builder *Builder) initBuilder(packagePath string) error {
-	if !path.IsAbs(packagePath) {
-		builder.packagePath = path.Join(builder.cwd, packagePath)
+	if !filepath.IsAbs(packagePath) {
+		builder.packagePath = filepath.Join(builder.cwd, packagePath)
 	} else {
 		builder.packagePath = packagePath
 	}
@@ -23,7 +23,7 @@ func (builder *Builder) initBuilder(packagePath string) error {
 		return fmt.Errorf("package path '%s' not found", builder.packagePath)
 	}
 
-	builder.programName = path.Base(builder.packagePath)
+	builder.programName = filepath.Base(builder.packagePath)
 	builder.packageName = builder.programName
 
 	if err := os.Chdir(builder.packagePath); err != nil {
@@ -34,7 +34,7 @@ func (builder *Builder) initBuilder(packagePath string) error {
 		return err
 	}
 
-	builder.distPath = path.Join(builder.packagePath, distPath, builder.target)
+	builder.distPath = filepath.Join(builder.packagePath, distPath, builder.target)
 
 	if !builder.devMode {
 		if err := builder.cleanBuilBuilder(); err != nil {
@@ -49,7 +49,7 @@ func (builder *Builder) initBuilder(packagePath string) error {
 		}
 	}
 
-	builder.assetsPath = path.Join(builder.packagePath, assetsPath)
+	builder.assetsPath = filepath.Join(builder.packagePath, assetsPath)
 
 	if _, err := os.Stat(builder.assetsPath); os.IsNotExist(err) {
 		log("NOTICE", fmt.Sprintf("creating assets folder: %s", builder.assetsPath))
@@ -62,13 +62,13 @@ func (builder *Builder) initBuilder(packagePath string) error {
 }
 
 func (builder *Builder) checkCopyResources() error {
-	resourcesInPath := path.Join(builder.packagePath, builder.target)
+	resourcesInPath := filepath.Join(builder.packagePath, builder.target)
 	var err error
 	if _, err = os.Stat(resourcesInPath); os.IsNotExist(err) {
 		if err = os.MkdirAll(resourcesInPath, os.ModeDir|0755); err != nil {
 			return err
 		}
-		if err = copy.Copy(path.Join(builder.tgeRootPath, tgeTemplatePath, builder.target), resourcesInPath); err != nil {
+		if err = copy.Copy(filepath.Join(builder.tgeRootPath, tgeTemplatePath, builder.target), resourcesInPath); err != nil {
 			return err
 		}
 		log("NOTICE", fmt.Sprintf("folder '%s' has been added to your project for customization (see README.md inside)", builder.target))
@@ -79,7 +79,7 @@ func (builder *Builder) checkCopyResources() error {
 func (builder *Builder) installGoMobile() (string, error) {
 	gomobilebin, err := exec.LookPath("gomobile")
 	if err != nil {
-		gomobilebin = path.Join(builder.goPath, "bin", "gomobile")
+		gomobilebin = filepath.Join(builder.goPath, "bin", "gomobile")
 		if _, err = os.Stat(gomobilebin); os.IsNotExist(err) {
 			log("NOTICE", "installing gomobile in your workspace")
 			cmd := exec.Command("go", "get", "github.com/thommil/tge-mobile/cmd/gomobile")
@@ -95,7 +95,7 @@ func (builder *Builder) installGoMobile() (string, error) {
 	}
 
 	if builder.target == "android" {
-		if _, err = os.Stat(path.Join(builder.goPath, "pkg", "gomobile")); os.IsNotExist(err) {
+		if _, err = os.Stat(filepath.Join(builder.goPath, "pkg", "gomobile")); os.IsNotExist(err) {
 			log("NOTICE", "initializing gomobile")
 			cmd := exec.Command(gomobilebin, "init")
 			cmd.Env = append(os.Environ(),
@@ -130,16 +130,16 @@ func (builder *Builder) buildAndroid(packagePath string) error {
 		return fmt.Errorf("failed to copy resources files: %s", err)
 	}
 
-	if _, err := os.Stat(path.Join(builder.packagePath, "android", "AndroidManifest.xml")); os.IsNotExist(err) {
-		if err = decentcopy.Copy(path.Join(builder.tgeRootPath, tgeTemplatePath, "android", "AndroidManifest.xml"), path.Join(builder.packagePath, "AndroidManifest.xml")); err != nil {
+	if _, err := os.Stat(filepath.Join(builder.packagePath, "android", "AndroidManifest.xml")); os.IsNotExist(err) {
+		if err = decentcopy.Copy(filepath.Join(builder.tgeRootPath, tgeTemplatePath, "android", "AndroidManifest.xml"), filepath.Join(builder.packagePath, "AndroidManifest.xml")); err != nil {
 			return fmt.Errorf("WARNING", "failed to copy AndroidManifest.xml from TGE, using default gombile one: %s", err)
 		}
 	} else {
-		if err = decentcopy.Copy(path.Join(builder.packagePath, builder.target, "AndroidManifest.xml"), path.Join(builder.packagePath, "AndroidManifest.xml")); err != nil {
+		if err = decentcopy.Copy(filepath.Join(builder.packagePath, builder.target, "AndroidManifest.xml"), filepath.Join(builder.packagePath, "AndroidManifest.xml")); err != nil {
 			return fmt.Errorf("WARNING", "failed to copy AndroidManifest.xml, using default gombile one: %s", err)
 		}
 	}
-	defer os.Remove(path.Join(builder.packagePath, "AndroidManifest.xml"))
+	defer os.Remove(filepath.Join(builder.packagePath, "AndroidManifest.xml"))
 
 	if builder.devMode {
 		var cmd *exec.Cmd
@@ -150,7 +150,7 @@ func (builder *Builder) buildAndroid(packagePath string) error {
 		if builder.devMode {
 			cmdParams = append(cmdParams, "-tags=debug")
 		}
-		cmdParams = append(cmdParams, "-o", path.Join(builder.distPath, fmt.Sprintf("%s.apk", builder.programName)))
+		cmdParams = append(cmdParams, "-o", filepath.Join(builder.distPath, fmt.Sprintf("%s.apk", builder.programName)))
 		cmd = exec.Command(gomobilebin, cmdParams...)
 		cmd.Env = append(os.Environ(),
 			fmt.Sprintf("GOPATH=%s", builder.goPath),
@@ -170,7 +170,7 @@ func (builder *Builder) buildAndroid(packagePath string) error {
 			if builder.devMode {
 				cmdParams = append(cmdParams, "-tags=debug")
 			}
-			cmdParams = append(cmdParams, "-o", path.Join(builder.distPath, fmt.Sprintf("%s-%s.apk", builder.programName, t)))
+			cmdParams = append(cmdParams, "-o", filepath.Join(builder.distPath, fmt.Sprintf("%s-%s.apk", builder.programName, t)))
 			cmd = exec.Command(gomobilebin, cmdParams...)
 			cmd.Env = append(os.Environ(),
 				fmt.Sprintf("GOPATH=%s", builder.goPath),
@@ -215,7 +215,7 @@ func (builder *Builder) buildIOS(packagePath string, bundleID string) error {
 	if builder.devMode {
 		cmdParams = append(cmdParams, "-tags=debug")
 	}
-	cmdParams = append(cmdParams, "-o", path.Join(builder.distPath, fmt.Sprintf("%s.app", builder.programName)))
+	cmdParams = append(cmdParams, "-o", filepath.Join(builder.distPath, fmt.Sprintf("%s.app", builder.programName)))
 	cmd = exec.Command(gomobilebin, cmdParams...)
 	cmd.Env = append(os.Environ(),
 		fmt.Sprintf("GOPATH=%s", builder.goPath),
@@ -246,7 +246,7 @@ func (builder *Builder) buildBrowser(packagePath string) error {
 	if builder.devMode {
 		cmdParams = append(cmdParams, "-tags=debug")
 	}
-	cmdParams = append(cmdParams, "-o", path.Join(builder.distPath, "main.wasm"))
+	cmdParams = append(cmdParams, "-o", filepath.Join(builder.distPath, "main.wasm"))
 	cmd = exec.Command("go", cmdParams...)
 	cmd.Env = append(os.Environ(),
 		fmt.Sprintf("GOPATH=%s", builder.goPath),
@@ -264,12 +264,12 @@ func (builder *Builder) buildBrowser(packagePath string) error {
 		return fmt.Errorf("failed to retrieve resources files from TGE: %s", err)
 	}
 
-	if err := copy.Copy(path.Join(builder.packagePath, builder.target), builder.distPath); err != nil {
+	if err := copy.Copy(filepath.Join(builder.packagePath, builder.target), builder.distPath); err != nil {
 		return fmt.Errorf("failed to copy resources files to dist: %s", err)
 	}
 
 	// Assets
-	assetsOutPath := path.Join(builder.distPath, assetsPath)
+	assetsOutPath := filepath.Join(builder.distPath, assetsPath)
 	if _, err := os.Stat(assetsOutPath); os.IsNotExist(err) {
 		if err := os.MkdirAll(assetsOutPath, os.ModeDir|0755); err != nil {
 			return err
@@ -330,7 +330,7 @@ func (builder *Builder) buildDesktop(packagePath string) error {
 		if builder.devMode {
 			cmdParams = append(cmdParams, "-tags=debug")
 		}
-		cmdParams = append(cmdParams, "-o", path.Join(builder.distPath, binaryFile))
+		cmdParams = append(cmdParams, "-o", filepath.Join(builder.distPath, binaryFile))
 		cmd = exec.Command("go", cmdParams...)
 		cmd.Env = append(os.Environ(),
 			fmt.Sprintf("GOPATH=%s", builder.goPath),
@@ -345,7 +345,7 @@ func (builder *Builder) buildDesktop(packagePath string) error {
 		if !builder.devMode {
 			appifybin, err := exec.LookPath("appify")
 			if err != nil {
-				appifybin = path.Join(builder.goPath, "bin", "appify")
+				appifybin = filepath.Join(builder.goPath, "bin", "appify")
 				if _, err = os.Stat(appifybin); os.IsNotExist(err) {
 					log("NOTICE", "installing appify in your workspace")
 					cmd = exec.Command("go", "get", "github.com/machinebox/appify")
@@ -364,7 +364,7 @@ func (builder *Builder) buildDesktop(packagePath string) error {
 			if appifybin != "" {
 				os.Chdir(builder.distPath)
 				cmd := exec.Command(appifybin, "-name", builder.programName, "-icon",
-					path.Join(builder.packagePath, builder.target, "icon.png"), path.Join(builder.distPath, builder.programName))
+					filepath.Join(builder.packagePath, builder.target, "icon.png"), filepath.Join(builder.distPath, builder.programName))
 				cmd.Env = append(os.Environ(),
 					fmt.Sprintf("GOPATH=%s", builder.goPath),
 				)
@@ -375,10 +375,10 @@ func (builder *Builder) buildDesktop(packagePath string) error {
 				}
 			}
 
-			os.RemoveAll(path.Join(builder.distPath, binaryFile))
+			os.RemoveAll(filepath.Join(builder.distPath, binaryFile))
 
 			// Assets
-			assetsOutPath = path.Join(builder.distPath, fmt.Sprintf("%s.app", builder.programName), "Contents", "Resources")
+			assetsOutPath = filepath.Join(builder.distPath, fmt.Sprintf("%s.app", builder.programName), "Contents", "Resources")
 			log("NOTICE", fmt.Sprintf("Copying assets in dist: %s", assetsOutPath))
 			if err := copy.Copy(builder.assetsPath, assetsOutPath); err != nil {
 				return err
@@ -390,7 +390,7 @@ func (builder *Builder) buildDesktop(packagePath string) error {
 		if !builder.devMode {
 			goversioninfobin, err := exec.LookPath("goversioninfo.exe")
 			if err != nil {
-				goversioninfobin = path.Join(builder.goPath, "bin", "goversioninfo.exe")
+				goversioninfobin = filepath.Join(builder.goPath, "bin", "goversioninfo.exe")
 				if _, err = os.Stat(goversioninfobin); os.IsNotExist(err) {
 					log("NOTICE", "installing goversioninfo in your workspace")
 					cmd = exec.Command("go", "get", "github.com/josephspurrier/goversioninfo/cmd/goversioninfo")
@@ -407,16 +407,16 @@ func (builder *Builder) buildDesktop(packagePath string) error {
 			}
 
 			if goversioninfobin != "" {
-				if err := decentcopy.Copy(path.Join(builder.packagePath, builder.target, "versioninfo.json"), path.Join(builder.packagePath, "versioninfo.json")); err != nil {
+				if err := decentcopy.Copy(filepath.Join(builder.packagePath, builder.target, "versioninfo.json"), filepath.Join(builder.packagePath, "versioninfo.json")); err != nil {
 					log("WARNING", "failed to prepare package for Windows application")
 				} else {
-					defer os.Remove(path.Join(builder.packagePath, "resource_windows_386.syso"))
-					defer os.Remove(path.Join(builder.packagePath, "resource_windows_amd64.syso"))
+					defer os.Remove(filepath.Join(builder.packagePath, "resource_windows_386.syso"))
+					defer os.Remove(filepath.Join(builder.packagePath, "resource_windows_amd64.syso"))
 				}
-				defer os.Remove(path.Join(builder.packagePath, "versioninfo.json"))
+				defer os.Remove(filepath.Join(builder.packagePath, "versioninfo.json"))
 
-				cmd := exec.Command(goversioninfobin, "-platform-specific=true", "-manifest", path.Join(builder.packagePath, builder.target, "main.exe.manifest"), "-icon",
-					path.Join(builder.packagePath, builder.target, "icon.ico"))
+				cmd := exec.Command(goversioninfobin, "-platform-specific=true", "-manifest", filepath.Join(builder.packagePath, builder.target, "main.exe.manifest"), "-icon",
+					filepath.Join(builder.packagePath, builder.target, "icon.ico"))
 				cmd.Env = append(os.Environ(),
 					fmt.Sprintf("GOPATH=%s", builder.goPath),
 				)
@@ -438,7 +438,7 @@ func (builder *Builder) buildDesktop(packagePath string) error {
 		} else {
 			cmdParams = append(cmdParams, "-ldflags", "-H=windowsgui")
 		}
-		cmdParams = append(cmdParams, "-o", path.Join(builder.distPath, binaryFile))
+		cmdParams = append(cmdParams, "-o", filepath.Join(builder.distPath, binaryFile))
 		cmd = exec.Command("go", cmdParams...)
 		cmd.Env = append(os.Environ(),
 			fmt.Sprintf("GOPATH=%s", builder.goPath),
@@ -451,7 +451,7 @@ func (builder *Builder) buildDesktop(packagePath string) error {
 
 		// Assets
 		if !builder.devMode {
-			assetsOutPath = path.Join(builder.distPath, assetsPath)
+			assetsOutPath = filepath.Join(builder.distPath, assetsPath)
 			if _, err := os.Stat(assetsOutPath); os.IsNotExist(err) {
 				if err := os.MkdirAll(assetsOutPath, os.ModeDir|0755); err != nil {
 					return err

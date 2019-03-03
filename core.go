@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"path"
 	"path/filepath"
 	"strings"
 )
@@ -50,7 +49,7 @@ func createBuilder() Builder {
 func (builder *Builder) installTGE() error {
 	builder.goPath = os.Getenv("GOPATH")
 	if builder.goPath == "" {
-		builder.goPath = path.Join(builder.packagePath, tgeLocalGoPath)
+		builder.goPath = filepath.Join(builder.packagePath, tgeLocalGoPath)
 	}
 
 	cmd := exec.Command("go", "list", "-e", "-f", "{{.Dir}}", tgePackageName)
@@ -64,7 +63,7 @@ func (builder *Builder) installTGE() error {
 	}
 
 	if builder.tgeRootPath == "" {
-		if _, err := os.Stat(path.Join(builder.packagePath, "go.mod")); os.IsNotExist(err) {
+		if _, err := os.Stat(filepath.Join(builder.packagePath, "go.mod")); os.IsNotExist(err) {
 			log("NOTICE", fmt.Sprintf("Initializing '%s' module", builder.packageName))
 			cmd := exec.Command("go", "mod", "init", builder.packageName)
 			cmd.Env = append(os.Environ(),
