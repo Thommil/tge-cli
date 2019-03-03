@@ -6,3 +6,8 @@ github.com/otiai10/copy v0.0.0-20180813032824-7e9a647135a1/go.mod h1:pXzZSDlN+HP
 github.com/otiai10/copy v1.0.1 h1:gtBjD8aq4nychvRZ2CyJvFWAw0aja+VHazDdruZKGZA=
 github.com/otiai10/copy v1.0.1/go.mod h1:8bMCJrAqOtN/d9oyh5HR7HhLQMvcGMpGdwRDYsfOCHc=
 github.com/otiai10/mint v1.2.3/go.mod h1:YnfyPNhBvnY8bW4SGQHCs/aAFhkgySlMZbrF5U0bOVw=
+github.com/thommil/tge v0.0.0-20190303110109-969de669193f h1:aPFnOxysGCmIo5uFzT1c1ynHmptmoaewbVDtOHg6Pio=
+github.com/thommil/tge v0.0.0-20190303110109-969de669193f/go.mod h1:b4aVfYUJFZ+S0y7ucXf3mNGAZgjr+XWC48hUP+g9He4=
+github.com/thommil/tge-mobile v0.0.0-20190301151748-91d5e211d0c8/go.mod h1:esUenx0eq059yhIVOB9vadnWk0+vDzKSIqrDR9o/T58=
+github.com/veandco/go-sdl2 v0.3.0 h1:IWYkHMp8V3v37NsKjszln8FFnX2+ab0538J371t+rss=
+github.com/veandco/go-sdl2 v0.3.0/go.mod h1:FB+kTpX9YTE+urhYiClnRzpOXbiWgaU3+5F2AB78DPg=
