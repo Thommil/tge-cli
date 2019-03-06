@@ -141,6 +141,11 @@ func (builder *Builder) buildAndroid(packagePath string) error {
 	}
 	defer os.Remove(filepath.Join(builder.packagePath, "AndroidManifest.xml"))
 
+	if err = decentcopy.Copy(filepath.Join(builder.packagePath, builder.target, "icon.png"), filepath.Join(builder.packagePath, "assets", "icon.png")); err != nil {
+		return fmt.Errorf("WARNING", "failed to copy icon.png, not found")
+	}
+	defer os.Remove(filepath.Join(builder.packagePath, "assets", "icon.png"))
+
 	if builder.devMode {
 		var cmd *exec.Cmd
 		cmdParams := []string{"build", "-target=android"}
@@ -205,6 +210,11 @@ func (builder *Builder) buildIOS(packagePath string, bundleID string) error {
 	if err := builder.checkCopyResources(); err != nil {
 		return fmt.Errorf("failed to copy resources files: %s", err)
 	}
+
+	if err = decentcopy.Copy(filepath.Join(builder.packagePath, builder.target, "icon.png"), filepath.Join(builder.packagePath, "assets", "icon.png")); err != nil {
+		return fmt.Errorf("WARNING", "failed to copy icon.png, not found")
+	}
+	defer os.Remove(filepath.Join(builder.packagePath, "assets", "icon.png"))
 
 	// Build
 	var cmd *exec.Cmd
@@ -364,7 +374,7 @@ func (builder *Builder) buildDesktop(packagePath string) error {
 			if appifybin != "" {
 				os.Chdir(builder.distPath)
 				cmd := exec.Command(appifybin, "-name", builder.programName, "-icon",
-					filepath.Join(builder.packagePath, builder.target, "icon.png"), filepath.Join(builder.distPath, builder.programName))
+					filepath.Join(builder.packagePath, builder.target, "icon.icns"), filepath.Join(builder.distPath, builder.programName))
 				cmd.Env = append(os.Environ(),
 					fmt.Sprintf("GOPATH=%s", builder.goPath),
 				)
