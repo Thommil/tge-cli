@@ -17,7 +17,7 @@ Ideally, the package-name should be based on standard Go package rules (ex: giht
 An application folder will be created with all needed resources to begin. See [Go Doc](https://godoc.org/github.com/thommil/tge) for details.
 
 Help extract:
-```shell
+```
 tge-cli init creates a TGE workspace.
 
 Usage:
@@ -46,7 +46,7 @@ Targets details:
  * [Windows](https://github.com/Thommil/tge/tree/master/template/windows)
 
 Help extract:
-```shell
+```
 tge-cli build build and deploys TGE applications.
 
 Usage:
