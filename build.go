@@ -568,7 +568,7 @@ application will be stored in the dist/$TARGET folder.
 
 -dev        dev flag allows to generate application faster by omitting assets copy.
             Desktop applications are not packed and console remains opened.
-			On Android the resulting APK will support all architectures.
+            On Android the resulting APK will support all architectures.
             Debug mode is also enabled.
 
 -v          verbose output for debugging purpose
